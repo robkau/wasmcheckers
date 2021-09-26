@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+
+<body>
+    <script src="tinytest.js"></script>
+    <script>
+        let instance;
+
+        fetch('checkers.wasm').then(response =>
+            response.arrayBuffer()
+        ).then(bytes =>
+            WebAssembly.instantiate(bytes)
+        ).then(result =>
+            {
+                console.log("loaded wasm module");
+                instance = result.instance;
+                console.log("instance", instance);
+
+                const white = 2;         // .... 0010
+                const black = 1;         // .... 0001
+                const crowned_white = 6; // .... 0110
+                const crowned_black = 5; // .... 0101
+
+                // define tests
+                tests({
+                    'offsetForPosition': function() {
+                        eq(0, instance.exports.offsetAt(0,0));
+                        eq(32, instance.exports.offsetAt(0,1));
+                        eq(4, instance.exports.offsetAt(1,0));
+                        eq(140, instance.exports.offsetAt(3,4));
+                        eq(112, instance.exports.offsetAt(4,3));
+                        eq(224, instance.exports.offsetAt(0,7));
+                        eq(28, instance.exports.offsetAt(7,0));
+                        eq(252, instance.exports.offsetAt(7,7));
+                    },
+                    'isCrowned': function() {
+                        eq(false, instance.exports.isCrowned(white));
+                        eq(false, instance.exports.isCrowned(black));
+                        eq(true, instance.exports.isCrowned(crowned_white));
+                        eq(true, instance.exports.isCrowned(crowned_black));
+                    },
+                    'isWhite': function() {
+                        eq(true, instance.exports.isWhite(white));
+                        eq(false, instance.exports.isWhite(black));
+                        eq(true, instance.exports.isWhite(crowned_white));
+                        eq(false, instance.exports.isWhite(crowned_black));
+                    },
+                    'isBlack': function() {
+                        eq(false, instance.exports.isBlack(white));
+                        eq(true, instance.exports.isBlack(black));
+                        eq(false, instance.exports.isBlack(crowned_white));
+                        eq(true, instance.exports.isBlack(crowned_black));
+                    },
+                    'withCrown': function() {
+                        eq(crowned_white, instance.exports.withCrown(white));
+                        eq(crowned_black, instance.exports.withCrown(black));
+                    },
+                    'withoutCrown': function() {
+                        eq(white, instance.exports.withoutCrown(crowned_white));
+                        eq(black, instance.exports.withoutCrown(crowned_black));
+                    },
+                    'inRange': function() {
+                        eq(true, instance.exports.inRange(0, 7, 0));
+                        eq(true, instance.exports.inRange(0, 7, 1));
+                        eq(true, instance.exports.inRange(0, 7, 6));
+                        eq(true, instance.exports.inRange(0, 7, 7));
+                        eq(false, instance.exports.inRange(0, 7, -1));
+                        eq(false, instance.exports.inRange(0, 7, 8))
+                    },
+                });
+            }
+        );
+    </script>
+</body>
+</html>
